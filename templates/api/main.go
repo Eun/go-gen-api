@@ -1,13 +1,13 @@
 package {{.Name | ToLower}}
 
 import (
-    "database/sql"
+	"database/sql"
 )
 
 type {{.Name}} struct {
 	{{- range $i, $e := .Fields}}
-    {{$e.Name}} *{{$e.Type -}}
-    {{end}}
+	{{$e.Name}} *{{$e.Type -}}
+	{{end}}
 }
 
 type {{.Name}}API struct {
@@ -16,19 +16,19 @@ type {{.Name}}API struct {
 }
 
 type Hooks struct {
-    PreCreate  func(object *{{.Name}}) error
-    PreUpdate  func(objects []{{.Name}}) error
-    PreDelete  func(objects []{{.Name}}) error
-    PostCreate func(object *{{.Name}})
-    PostUpdate func(objects []{{.Name}})
-    PostDelete func(objects []{{.Name}})
+	PreCreate  func(object *{{.Name}}) error
+	PreUpdate  func(objects []{{.Name}}) error
+	PreDelete  func(objects []{{.Name}}) error
+	PostCreate func(object *{{.Name}})
+	PostUpdate func(objects []{{.Name}})
+	PostDelete func(objects []{{.Name}})
 }
 
 func New(db *sql.DB) *{{.Name}}API {
-    return &{{.Name}}API {
-        DB: db,
+	return &{{.Name}}API {
+		DB: db,
 		Hooks: new(Hooks),
-    }
+	}
 }
 
 

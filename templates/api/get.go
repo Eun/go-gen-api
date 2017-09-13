@@ -33,28 +33,28 @@ func (api {{.Name}}API) GetWhere(whereQuery string, whereValues ...interface{}) 
 }
 
 func (api {{.Name}}API) GetFirst(findObject {{.Name}}) ({{.Name}}, error) {
-    result, err := api.Get(findObject)
-    if err != nil {
-        return {{.Name}}{}, err
-    }
-    if len(result) > 0 {
-        return result[0], nil
-    }
-    return {{.Name}}{}, errors.New("{{.Name}} not found")
+	result, err := api.Get(findObject)
+	if err != nil {
+		return {{.Name}}{}, err
+	}
+	if len(result) > 0 {
+		return result[0], nil
+	}
+	return {{.Name}}{}, errors.New("{{.Name}} not found")
 }
 
 
 func (api {{.Name}}API) GetFirstWhere(whereQuery string, whereValues ...interface{}) ({{.Name}}, error) {
-    result, err := api.GetWhere(whereQuery, whereValues...)
-    if err != nil {
-        return {{.Name}}{}, err
-    }
-    if len(result) > 0 {
-        return result[0], nil
-    }
-    return {{.Name}}{}, errors.New("{{.Name}} not found")
+	result, err := api.GetWhere(whereQuery, whereValues...)
+	if err != nil {
+		return {{.Name}}{}, err
+	}
+	if len(result) > 0 {
+		return result[0], nil
+	}
+	return {{.Name}}{}, errors.New("{{.Name}} not found")
 }
 
 func (api {{.Name}}API) GetAll() ([]{{.Name}}, error) {
-    return api.GetWhere("")
+	return api.GetWhere("")
 }

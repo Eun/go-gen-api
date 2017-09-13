@@ -30,7 +30,7 @@ type RestAPI struct {
 }
 
 type RestHooks struct {
-    PreCreate      func(r *http.Request, object *{{.Name}}) error
+	PreCreate      func(r *http.Request, object *{{.Name}}) error
 	PreUpdate      func(r *http.Request, findObject *{{.Name}}, updateObject *{{.Name}}) error
 	PreDelete      func(r *http.Request, object *{{.Name}}) error
 	PreGet         func(r *http.Request, object *{{.Name}}) error

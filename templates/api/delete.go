@@ -61,5 +61,5 @@ func (api {{.Name}}API) DeleteWhere(deleteQuery string, whereValues ...interface
 
 
 func (api {{.Name}}API) DeleteAll() error {
-    return api.DeleteWhere("")
+	return api.DeleteWhere("")
 }

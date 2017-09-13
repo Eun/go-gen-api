@@ -31,14 +31,14 @@ func (api *RestAPI) Update(w http.ResponseWriter, r *http.Request) {
 	if api.Hooks.PreUpdate != nil {
 		if err := api.Hooks.PreUpdate(r, &update.Find, &update.Update); err != nil {
 			api.writeError(w, r, err.Error())
-		    return
+			return
 		}
 	}
 	err = api.api.Update(update.Find, update.Update)
 	if err != nil {
 		code := api.generateErrorCode()
 		api.writeError(w, r, fmt.Sprintf("Could not update {{.Name}}, ErrorCode: %s", code))
-        api.Logger.Printf("[{{.Name}}API:Update] Error: %v, ErrorCode: %s\n", err, code)
+		api.Logger.Printf("[{{.Name}}API:Update] Error: %v, ErrorCode: %s\n", err, code)
 		return
 	}
 	if api.Hooks.UpdateResponse != nil {

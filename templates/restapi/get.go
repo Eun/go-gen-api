@@ -41,7 +41,7 @@ func (api *RestAPI) Get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code := api.generateErrorCode()
 		api.writeError(w, r, fmt.Sprintf("Could not get {{.Name}}, ErrorCode: %s", code))
-        api.Logger.Printf("[{{.Name}}API:Get] Error: %v, ErrorCode: %s\n", err, code)
+		api.Logger.Printf("[{{.Name}}API:Get] Error: %v, ErrorCode: %s\n", err, code)
 		return
 	}
 	if api.Hooks.GetResponse != nil {
