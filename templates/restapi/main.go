@@ -165,11 +165,11 @@ func (api *RestAPI) unmarshalUrlValues(values url.Values, result *{{.Name}}) err
 			}
 			result.{{$e.Name}} = &val
 		{{else if eq $e.Type "int" -}}
-			val, err := parseInt(value[0], 10, 32)
+			val, err := strconv.Atoi(value[0])
 			if err != nil {
 				return err
 			}
-			result.{{$e.Name}} = &int(val)
+			result.{{$e.Name}} = &val
 		{{else if eq $e.Type "uint16" -}}
 			val, err := parseInt(value[0], 10, 16)
 			if err != nil {
