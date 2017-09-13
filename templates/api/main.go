@@ -65,3 +65,10 @@ func (api {{.Name}}API) getSetValues(object *{{.Name}}) ([]string, []interface{}
 	}
 	return queries, queryValues
 }
+
+{{- range $i, $e := .Fields}}
+func (object *{{$.Name}}) Set{{$e.Name}}(value {{$e.Type}}) *{{$.Name}} {
+	object.{{$e.Name}} = &value
+	return object
+}
+{{end}}
