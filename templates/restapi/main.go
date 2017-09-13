@@ -1,16 +1,20 @@
 package {{.Name | ToLower}}
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
+	"go/ast"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	
@@ -99,13 +103,21 @@ func (api *RestAPI) generateErrorCode() string {
 	return hex.EncodeToString(uuid)
 }
 
+type contextKey int
+
+const bodyKey contextKey = iota
 
 func (api *RestAPI) read(r *http.Request) (bytes []byte, err error) {
-	bytes, err = ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
+	body := r.Context().Value(bodyKey)
+	if body == nil {
+		bytes, err = ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		*r = *r.WithContext(context.WithValue(r.Context(), bodyKey, bytes))
+		return bytes, err
 	}
-	return bytes, err
+	return body.([]byte), nil
 }
 
 func (api *RestAPI) unmarshal(r *http.Request, result interface{}) error {
@@ -136,68 +148,116 @@ func parseInt(s string, base int, bitSize int) (i int64, err error) {
 	return strconv.ParseInt(s, base, bitSize)
 }
 
-func (api *RestAPI) unmarshalUrlValues(values url.Values, result *{{.Name}}) error {
-	for key, value := range values {
-		if len(value) <= 0 {
-			continue
-		}
-		switch strings.ToLower(key) {
-		{{range $i, $e := .Fields -}}
-		case "{{$e.Name | ToLower}}":
-			{{if eq $e.Type "string" -}}
-			result.{{$e.Name}} = &value[0]
-		{{else if eq $e.Type "int16" -}}
-			val, err := parseInt(value[0], 10, 16)
-			if err != nil {
-				return err
+func (api *RestAPI) unmarshalUrlValues(values url.Values, result interface{}) error {
+	reflectValue := reflect.ValueOf(result)
+	
+	if reflectValue.Kind() != reflect.Ptr || reflectValue.IsNil() {
+		return fmt.Errorf("Invalid type %s", reflect.TypeOf(reflectValue).String())
+	}
+
+	reflectValue = reflectValue.Elem()
+
+	// ptr in ptr is not supported
+	if reflectValue.Kind() == reflect.Ptr {
+		return fmt.Errorf("Invalid type %s", reflect.TypeOf(reflectValue).String())
+	}
+
+	reflectType := reflectValue.Type()
+
+	for i := 0; i < reflectType.NumField(); i++ {
+		if fieldStruct := reflectType.Field(i); ast.IsExported(fieldStruct.Name) {
+			var ptrField *reflect.Value
+			field := reflectValue.Field(i)
+			fieldType := fieldStruct.Type
+			if fieldType.Kind() == reflect.Ptr {
+				ptrField = &field
+				fieldType = fieldType.Elem()
 			}
-			result.{{$e.Name}} = &int16(val)
-		{{else if eq $e.Type "int32" -}}
-			val, err := parseInt(value[0], 10, 32)
-			if err != nil {
-				return err
+
+			// ptr in ptr is not supported
+			if fieldType.Kind() == reflect.Ptr {
+				return fmt.Errorf("Invalid type %s in %s", fieldType.String(), fieldStruct.Name)
 			}
-			result.{{$e.Name}} = &int32(val)
-		{{else if eq $e.Type "int64" -}}
-			val, err := parseInt(value[0], 10, 64)
-			if err != nil {
-				return err
+
+			for key, value := range values {
+				if strings.EqualFold(key, fieldStruct.Name) {
+					switch fieldType.Kind() {
+					case reflect.String:
+						if ptrField != nil {
+							ptrField.Set(reflect.New(fieldType))
+							field = ptrField.Elem()
+						}
+						field.SetString(value[0])
+					case reflect.Int16:
+						val, err := parseInt(value[0], 10, 16)
+						if err != nil {
+							return err
+						}
+						if ptrField != nil {
+							ptrField.Set(reflect.New(fieldType))
+							field = ptrField.Elem()
+						}
+						field.SetInt(val)
+					case reflect.Int:
+						fallthrough
+					case reflect.Int32:
+						val, err := parseInt(value[0], 10, 32)
+						if err != nil {
+							return err
+						}
+						if ptrField != nil {
+							ptrField.Set(reflect.New(fieldType))
+							field = ptrField.Elem()
+						}
+						field.SetInt(val)
+					case reflect.Int64:
+						val, err := parseInt(value[0], 10, 64)
+						if err != nil {
+							return err
+						}
+						if ptrField != nil {
+							ptrField.Set(reflect.New(fieldType))
+							field = ptrField.Elem()
+						}
+						field.SetInt(val)
+					case reflect.Uint16:
+						val, err := parseInt(value[0], 10, 16)
+						if err != nil {
+							return err
+						}
+						if ptrField != nil {
+							ptrField.Set(reflect.New(fieldType))
+							field = ptrField.Elem()
+						}
+						field.SetUint(uint64(val))
+					case reflect.Uint:
+						fallthrough
+					case reflect.Uint32:
+						val, err := parseInt(value[0], 10, 32)
+						if err != nil {
+							return err
+						}
+						if ptrField != nil {
+							ptrField.Set(reflect.New(fieldType))
+							field = ptrField.Elem()
+						}
+						field.SetUint(uint64(val))
+					case reflect.Uint64:
+						val, err := parseInt(value[0], 10, 64)
+						if err != nil {
+							return err
+						}
+						if ptrField != nil {
+							ptrField.Set(reflect.New(fieldType))
+							field = ptrField.Elem()
+						}
+						field.SetUint(uint64(val))
+					}
+				}
 			}
-			result.{{$e.Name}} = &val
-		{{else if eq $e.Type "int" -}}
-			val, err := strconv.Atoi(value[0])
-			if err != nil {
-				return err
-			}
-			result.{{$e.Name}} = &val
-		{{else if eq $e.Type "uint16" -}}
-			val, err := parseInt(value[0], 10, 16)
-			if err != nil {
-				return err
-			}
-			result.{{$e.Name}} = &uint16(val)
-		{{else if eq $e.Type "uint32" -}}
-			val, err := parseInt(value[0], 10, 32)
-			if err != nil {
-				return err
-			}
-			result.{{$e.Name}} = &uint32(val)
-		{{else if eq $e.Type "uint64" -}}
-			val, err := parseInt(value[0], 10, 64)
-			if err != nil {
-				return err
-			}
-			result.{{$e.Name}} = &uint64(val)
-		{{else if eq $e.Type "uint" -}}
-			val, err := parseInt(value[0], 10, 32)
-			if err != nil {
-				return err
-			}
-			result.{{$e.Name}} = &uint(val)
-		{{end -}}
-		{{end -}}
 		}
 	}
+	
 	return nil
 }
 
@@ -235,4 +295,22 @@ func (api *RestAPI) customHandler(f func(r *http.Request, object *{{.Name}}) (in
 
 func (api *RestAPI) HandleFunc(path string, f func(r *http.Request, object *{{.Name}}) (interface{}, error)) {
 	api.router.HandleFunc(path, api.customHandler(f))
+}
+
+func (api *RestAPI) GetCustomFields(r *http.Request, object interface{}) error {
+	switch strings.ToLower(r.Method) {
+	case "post":
+		err := api.unmarshal(r, object)
+		if err != nil {
+			return errors.New("Request was malformed")
+		}
+	case "get":
+		err := api.unmarshalUrlValues(r.URL.Query(), object)
+		if err != nil {
+			return errors.New("Request was malformed")
+		}
+	default:
+		return errors.New("Must be a POST or GET request")
+	}
+	return nil
 }
