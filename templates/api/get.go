@@ -2,7 +2,6 @@ package {{.Name | ToLower}}
 
 import (
 	"strings"
-	"errors"
 	"database/sql"
 )
 
@@ -32,29 +31,51 @@ func (api {{.Name}}API) GetWhere(whereQuery string, whereValues ...interface{}) 
 	return api.scanRows(rows)
 }
 
-func (api {{.Name}}API) GetFirst(findObject {{.Name}}) ({{.Name}}, error) {
+func (api {{.Name}}API) GetFirst(findObject {{.Name}}) (*{{.Name}}, error) {
 	result, err := api.Get(findObject)
 	if err != nil {
-		return {{.Name}}{}, err
+		return nil, err
 	}
 	if len(result) > 0 {
-		return result[0], nil
+		return &result[0], nil
 	}
-	return {{.Name}}{}, errors.New("{{.Name}} not found")
+	return nil, nil
 }
 
 
-func (api {{.Name}}API) GetFirstWhere(whereQuery string, whereValues ...interface{}) ({{.Name}}, error) {
+func (api {{.Name}}API) GetFirstWhere(whereQuery string, whereValues ...interface{}) (*{{.Name}}, error) {
 	result, err := api.GetWhere(whereQuery, whereValues...)
 	if err != nil {
-		return {{.Name}}{}, err
+		return nil, err
 	}
 	if len(result) > 0 {
-		return result[0], nil
+		return &result[0], nil
 	}
-	return {{.Name}}{}, errors.New("{{.Name}} not found")
+	return nil, nil
 }
 
 func (api {{.Name}}API) GetAll() ([]{{.Name}}, error) {
 	return api.GetWhere("")
+}
+
+func (api {{.Name}}API) Exists(findObject {{.Name}}) (bool, error) {
+	object, err := api.GetFirst(findObject)
+	if err != nil {
+		return false, err
+	}
+	if object == nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (api {{.Name}}API) ExistsWhere(whereQuery string, whereValues ...interface{}) (bool, error) {
+	result, err := api.GetWhere(whereQuery, whereValues...)
+	if err != nil {
+		return false, err
+	}
+	if len(result) == 0 {
+		return false, nil
+	}
+	return true, nil
 }

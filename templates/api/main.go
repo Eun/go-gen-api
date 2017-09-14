@@ -35,14 +35,58 @@ func New(db *sql.DB) *{{.Name}}API {
 func (api {{.Name}}API) scanRows(rows *sql.Rows) ([]{{.Name}}, error){
 	var objects []{{.Name}}
 	for rows.Next() {
-		object := {{.Name}}{
-			{{range $i, $e := .Fields}}
-			{{$e.Name}}: new({{$e.Type}}),
-			{{- end}}
-		}
-		if err := rows.Scan({{range $i, $e := .Fields}}{{if $i}}, {{end}}object.{{$e.Name}}{{end}}); err != nil {
+		tempObject := struct {
+		{{- range $i, $e := .Fields}}
+			{{if eq $e.Type "string"}}
+				{{- $e.Name}} sql.NullString
+			{{- else if eq $e.Type "int"}}
+				{{- $e.Name}} sql.NullInt64
+			{{- else if eq $e.Type "int16"}}
+				{{- $e.Name}} sql.NullInt64
+			{{- else if eq $e.Type "int32"}}
+				{{- $e.Name}} sql.NullInt64
+			{{- else if eq $e.Type "int64"}}
+				{{- $e.Name}} sql.NullInt64
+			{{- else if eq $e.Type "uint"}}
+				{{- $e.Name}} sql.NullInt64
+			{{- else if eq $e.Type "uint16"}}
+				{{- $e.Name}} sql.NullInt64
+			{{- else if eq $e.Type "uint32"}}
+				{{- $e.Name}} sql.NullInt64
+			{{- else if eq $e.Type "uint64"}}
+				{{- $e.Name}} sql.NullInt64
+			{{end}}
+		{{- end}}
+		} {}
+		if err := rows.Scan({{range $i, $e := .Fields}}{{if $i}}, {{end}}&tempObject.{{$e.Name}}{{end}}); err != nil {
 			return nil, err
 		}
+
+		var object {{.Name}}
+		{{range $i, $e := .Fields}}
+		if tempObject.{{$e.Name}}.Valid {
+			object.{{$e.Name}} = new({{$e.Type}})
+		{{- if eq $e.Type "string"}}
+			*object.{{$e.Name}} = tempObject.{{$e.Name}}.String
+		{{- else if eq $e.Type "int"}}
+			*object.{{$e.Name}} = int(tempObject.{{$e.Name}}.Int64)
+		{{- else if eq $e.Type "int16"}}
+			*object.{{$e.Name}} = int16(tempObject.{{$e.Name}}.Int64)
+		{{- else if eq $e.Type "int32"}}
+			*object.{{$e.Name}} = int32(tempObject.{{$e.Name}}.Int64)
+		{{- else if eq $e.Type "int64"}}
+			*object.{{$e.Name}} = tempObject.{{$e.Name}}.Int64
+		{{- else if eq $e.Type "uint"}}
+			*object.{{$e.Name}} = uint(tempObject.{{$e.Name}}.Int64)
+		{{- else if eq $e.Type "uint16"}}
+			*object.{{$e.Name}} = uint16(tempObject.{{$e.Name}}.Int64)
+		{{- else if eq $e.Type "uint32"}}
+			*object.{{$e.Name}} = uint32(tempObject.{{$e.Name}}.Int64)
+		{{- else if eq $e.Type "uint64"}}
+			*object.{{$e.Name}} = uint64(tempObject.{{$e.Name}}.Int64)
+		{{- end}}
+		}
+		{{- end}}
 		objects = append(objects, object)
 	}
 	if err := rows.Err(); err != nil {
