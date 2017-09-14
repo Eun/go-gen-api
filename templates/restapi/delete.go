@@ -31,7 +31,11 @@ func (api *RestAPI) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	if api.Hooks.PreDelete != nil {
 		if err := api.Hooks.PreDelete(r, &object); err != nil {
-			api.writeError(w, r, err.Error())
+			if err == StopOperation {
+				api.writeSuccessResponse(w, r)
+			} else {
+				api.writeError(w, r, err.Error())
+			}
 			return
 		}
 	}

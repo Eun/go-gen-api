@@ -30,7 +30,11 @@ func (api *RestAPI) Get(w http.ResponseWriter, r *http.Request) {
 
 	if api.Hooks.PreGet != nil {
 		if err := api.Hooks.PreGet(r, &object); err != nil {
-			api.writeError(w, r, err.Error())
+			if err == StopOperation {
+				api.writeSuccessResponse(w, r)
+			} else {
+				api.writeError(w, r, err.Error())
+			}
 			return
 		}
 	}

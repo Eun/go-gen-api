@@ -8,6 +8,9 @@ import (
 func (api {{.Name}}API) Create(newObject {{.Name}}) error {
 	if api.Hooks.PreCreate != nil {
 		if err := api.Hooks.PreCreate(&newObject); err != nil {
+			if err == StopOperation {
+				return nil
+			}
 			return err
 		}
 	}

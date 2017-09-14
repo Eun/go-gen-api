@@ -21,6 +21,9 @@ func (api {{.Name}}API) Update(findObject {{.Name}}, updateObject {{.Name}}) err
 	}
 	if api.Hooks.PreUpdate != nil {
 		if err = api.Hooks.PreUpdate(objects); err != nil {
+			if err == StopOperation {
+				return nil
+			}
 			return err
 		}
 	}

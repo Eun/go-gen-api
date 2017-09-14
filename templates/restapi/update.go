@@ -30,7 +30,11 @@ func (api *RestAPI) Update(w http.ResponseWriter, r *http.Request) {
 
 	if api.Hooks.PreUpdate != nil {
 		if err := api.Hooks.PreUpdate(r, &update.Find, &update.Update); err != nil {
-			api.writeError(w, r, err.Error())
+			if err == StopOperation {
+				api.writeSuccessResponse(w, r)
+			} else {
+				api.writeError(w, r, err.Error())
+			}
 			return
 		}
 	}

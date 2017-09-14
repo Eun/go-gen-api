@@ -25,7 +25,11 @@ func (api *RestAPI) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	if api.Hooks.PreCreate != nil {
 		if err := api.Hooks.PreCreate(r, &object); err != nil {
-			api.writeError(w, r, err.Error())
+			if err == StopOperation {
+				api.writeSuccessResponse(w, r)
+			} else {
+				api.writeError(w, r, err.Error())
+			}
 			return
 		}
 	}

@@ -11,6 +11,9 @@ func (api {{.Name}}API) Delete(deleteObject {{.Name}}) error {
 	}
 	if api.Hooks.PreDelete != nil {
 		if err = api.Hooks.PreDelete(objects); err != nil {
+			if err == StopOperation {
+				return nil
+			}
 			return err
 		}
 	}

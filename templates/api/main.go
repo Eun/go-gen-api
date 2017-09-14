@@ -1,6 +1,7 @@
 package {{.Name | ToLower}}
 
 import (
+	"errors"
 	"database/sql"
 )
 
@@ -14,6 +15,8 @@ type {{.Name}}API struct {
 	DB      *sql.DB
 	Hooks   *Hooks
 }
+
+var StopOperation = errors.New("StopOperation")
 
 type Hooks struct {
 	PreCreate  func(object *{{.Name}}) error
