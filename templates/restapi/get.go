@@ -12,20 +12,19 @@ func (api *RestAPI) Get(w http.ResponseWriter, r *http.Request) {
 
 	switch strings.ToLower(r.Method) {
 		case "post":
-			err = api.unmarshal(r, &object)
-			if err != nil {
-				api.writeError(w, r, "Request was malformed")
-				return
-			}
+			err = api.unmarshalBody(r, &object)
 		case "get":
 			err = api.unmarshalUrlValues(r.URL.Query(), &object)
-			if err != nil {
-				api.writeError(w, r, "Request was malformed")
-				return
-			}
 		default:
 			api.writeError(w, r, "Must be a POST or GET request")
 			return
+	}
+
+	if err != nil {
+		code := api.generateErrorCode()
+		api.Logger.Printf("[{{.Name}}API:Update] Error: %v, ErrorCode: %s\n", err, code)
+		api.writeError(w, r, fmt.Sprintf("Request was malformed, Code: %s", code))
+		return
 	}
 
 	if api.Hooks.PreGet != nil {

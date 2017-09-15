@@ -17,9 +17,11 @@ func (api *RestAPI) Update(w http.ResponseWriter, r *http.Request) {
 		case "put":
 			fallthrough
 		case "post":
-			err = api.unmarshal(r, &update)
+			err = api.unmarshalBody(r, &update)
 			if err != nil {
-				api.writeError(w, r, "Request was malformed")
+				code := api.generateErrorCode()
+				api.Logger.Printf("[{{.Name}}API:Update] Error: %v, ErrorCode: %s\n", err, code)
+				api.writeError(w, r, fmt.Sprintf("Request was malformed, Code: %s", code))
 				return
 			}
 		default:

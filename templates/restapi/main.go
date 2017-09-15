@@ -107,7 +107,10 @@ type contextKey int
 
 const bodyKey contextKey = iota
 
-func (api *RestAPI) read(r *http.Request) (bytes []byte, err error) {
+func getBody(r *http.Request) (bytes []byte, err error) {
+	if r.Body == nil {
+		return nil, nil
+	}
 	body := r.Context().Value(bodyKey)
 	if body == nil {
 		bytes, err = ioutil.ReadAll(r.Body)
@@ -120,7 +123,7 @@ func (api *RestAPI) read(r *http.Request) (bytes []byte, err error) {
 	return body.([]byte), nil
 }
 
-func (api *RestAPI) unmarshal(r *http.Request, result interface{}) error {
+func (api *RestAPI) unmarshalBody(r *http.Request, result interface{}) error {
 	var unmarshal func(data []byte, v interface{}) error
 	switch strings.ToLower(r.Header.Get("Content-Type")) {
 	case "application/xml":
@@ -130,16 +133,18 @@ func (api *RestAPI) unmarshal(r *http.Request, result interface{}) error {
 	case "application/json":
 		unmarshal = json.Unmarshal
 	default:
-		return errors.New("Unknown Content-Type")
+		return fmt.Errorf("Unknown Content-Type: '%s'", r.Header.Get("Content-Type"))
 	}
-	bytes, err := api.read(r)
+	body, err := getBody(r)
 	if err != nil {
 		return err
 	}
 
-	err = unmarshal(bytes, result)
-	if err != nil {
-		return err
+	if body != nil {
+		err = unmarshal(body, result)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -268,21 +273,21 @@ func (api *RestAPI) customHandler(f func(r *http.Request, object *{{.Name}}) (in
 	
 		switch strings.ToLower(r.Method) {
 			case "post":
-				err = api.unmarshal(r, &object)
-				if err != nil {
-					api.writeError(w, r, "Request was malformed")
-					return
-				}
+				err = api.unmarshalBody(r, &object)
 			case "get":
 				err = api.unmarshalUrlValues(r.URL.Query(), &object)
-				if err != nil {
-					api.writeError(w, r, "Request was malformed")
-					return
-				}
 			default:
 				api.writeError(w, r, "Must be a POST or GET request")
 				return
 		}
+
+		if err != nil {
+			code := api.generateErrorCode()
+			api.Logger.Printf("[{{.Name}}API:Custom] Error: %v, ErrorCode: %s\n", err, code)
+			api.writeError(w, r, fmt.Sprintf("Request was malformed, Code: %s", code))
+			return
+		}
+
 		var result interface{}
 		result, err = f(r, &object)
 		if err != nil {
@@ -298,19 +303,20 @@ func (api *RestAPI) HandleFunc(path string, f func(r *http.Request, object *{{.N
 }
 
 func (api *RestAPI) GetCustomFields(r *http.Request, object interface{}) error {
+	var err error
 	switch strings.ToLower(r.Method) {
 	case "post":
-		err := api.unmarshal(r, object)
-		if err != nil {
-			return errors.New("Request was malformed")
-		}
+		err = api.unmarshalBody(r, object)
 	case "get":
-		err := api.unmarshalUrlValues(r.URL.Query(), object)
-		if err != nil {
-			return errors.New("Request was malformed")
-		}
+		err = api.unmarshalUrlValues(r.URL.Query(), object)
 	default:
 		return errors.New("Must be a POST or GET request")
+	}
+
+	if err != nil {
+		code := api.generateErrorCode()
+		api.Logger.Printf("[{{.Name}}API:GetCustomFields] Error: %v, ErrorCode: %s\n", err, code)
+		return fmt.Errorf("Request was malformed, Code: %s", code)
 	}
 	return nil
 }

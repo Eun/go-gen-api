@@ -14,9 +14,11 @@ func (api *RestAPI) Create(w http.ResponseWriter, r *http.Request) {
 		case "put":
 			fallthrough
 		case "post":
-			err = api.unmarshal(r, &object)
+			err = api.unmarshalBody(r, &object)
 			if err != nil {
-				api.writeError(w, r, "Request was malformed")
+				code := api.generateErrorCode()
+				api.Logger.Printf("[{{.Name}}API:Create] Error: %v, ErrorCode: %s\n", err, code)
+				api.writeError(w, r, fmt.Sprintf("Request was malformed, Code: %s", code))
 				return
 			}
 		default:
