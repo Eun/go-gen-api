@@ -140,7 +140,7 @@ func (api *RestAPI) unmarshalBody(r *http.Request, result interface{}) error {
 		return err
 	}
 
-	if body != nil {
+	if body != nil && len(body) > 0{
 		err = unmarshal(body, result)
 		if err != nil {
 			return err
