@@ -63,7 +63,7 @@ With **go-gen-api** you can automate this process:
 
     err := gogenapi.Generate(&gogenapi.Config{
 		Structs:      []interface{}{&User{}, &Group{}, &GroupMember{}},
-		OutputPath:   "gogenapi",
+		OutputPath:   "generated",
 	})
 	if err != nil {
 		panic(err)
@@ -73,10 +73,10 @@ After generation you can use it in your project:
 
     db, err := sql.Open("sqlite3", "user.sqlite")
     router := mux.NewRouter()
-	restAPI := userAPI.NewRestAPI(router.PathPrefix("/user").Subrouter(), userAPI.New(db))
+	restAPI := generated.NewUserRestAPI(router.PathPrefix("/user").Subrouter(), generated.NewUserAPI(db))
 
     // You could also setup some hooks before or after execution
-	restAPI.Hooks.PreCreate = func(r *http.Request, user *userAPI.User) error {
+	restAPI.Hooks.PreCreate = func(r *http.Request, user *generated.User) error {
 		if user.Name == nil || len(*user.Name) <= 0 {
 			return errors.New("Invalid Name")
 		}
