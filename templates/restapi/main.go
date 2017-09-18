@@ -1,7 +1,6 @@
-package {{.Name | ToLower}}
+package {{.PackageName}}
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -9,27 +8,24 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
-	
 
 	"github.com/gorilla/mux"
 )
 
-type RestAPI struct {
+type {{.Name}}RestAPI struct {
 	router *mux.Router
 	api    *{{.Name}}API
 	Logger *log.Logger
-	Hooks  *RestHooks
+	Hooks  *{{.Name}}RestHooks
 }
 
-type RestHooks struct {
+type {{.Name}}RestHooks struct {
 	PreCreate      func(r *http.Request, object *{{.Name}}) error
 	PreUpdate      func(r *http.Request, findObject *{{.Name}}, updateObject *{{.Name}}) error
 	PreDelete      func(r *http.Request, object *{{.Name}}) error
@@ -41,12 +37,12 @@ type RestHooks struct {
 	GetResponse    func(r *http.Request, objects []{{.Name}}) (interface{}, error)
 }
 
-func NewRestAPI(router *mux.Router, api *{{.Name}}API) *RestAPI {
-	a := RestAPI {
+func New{{.Name}}RestAPI(router *mux.Router, api *{{.Name}}API) *{{.Name}}RestAPI {
+	a := {{.Name}}RestAPI {
 		router: router,
 		api: api,
 		Logger: log.New(os.Stderr, "", log.LstdFlags),
-		Hooks: new(RestHooks),
+		Hooks: new({{.Name}}RestHooks),
 	}
 	a.router.HandleFunc("/create", a.Create)
 	a.router.HandleFunc("/create/", a.Create)
@@ -59,7 +55,7 @@ func NewRestAPI(router *mux.Router, api *{{.Name}}API) *RestAPI {
 	return &a
 }
 
-func (api *RestAPI) writeError(w http.ResponseWriter, r *http.Request, err string) {
+func (api *{{.Name}}RestAPI) writeError(w http.ResponseWriter, r *http.Request, err string) {
 	switch strings.ToLower(r.Header.Get("Content-Type")) {
 	case "application/xml":
 		fallthrough
@@ -76,7 +72,7 @@ func (api *RestAPI) writeError(w http.ResponseWriter, r *http.Request, err strin
 	}
 }
 
-func (api *RestAPI) writeSuccessResponse(w http.ResponseWriter, r *http.Request, v ...interface{}) {
+func (api *{{.Name}}RestAPI) writeSuccessResponse(w http.ResponseWriter, r *http.Request, v ...interface{}) {
 	switch strings.ToLower(r.Header.Get("Content-Type")) {
 	case "application/xml":
 		fallthrough
@@ -97,33 +93,13 @@ func (api *RestAPI) writeSuccessResponse(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func (api *RestAPI) generateErrorCode() string {
+func (api *{{.Name}}RestAPI) generateErrorCode() string {
 	uuid := make([]byte, 16)
 	rand.Read(uuid)
 	return hex.EncodeToString(uuid)
 }
 
-type contextKey int
-
-const bodyKey contextKey = iota
-
-func getBody(r *http.Request) (bytes []byte, err error) {
-	if r.Body == nil {
-		return nil, nil
-	}
-	body := r.Context().Value(bodyKey)
-	if body == nil {
-		bytes, err = ioutil.ReadAll(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		*r = *r.WithContext(context.WithValue(r.Context(), bodyKey, bytes))
-		return bytes, err
-	}
-	return body.([]byte), nil
-}
-
-func (api *RestAPI) unmarshalBody(r *http.Request, result interface{}) error {
+func (api *{{.Name}}RestAPI) unmarshalBody(r *http.Request, result interface{}) error {
 	var unmarshal func(data []byte, v interface{}) error
 	switch strings.ToLower(r.Header.Get("Content-Type")) {
 	case "application/xml":
@@ -149,11 +125,9 @@ func (api *RestAPI) unmarshalBody(r *http.Request, result interface{}) error {
 	return nil
 }
 
-func parseInt(s string, base int, bitSize int) (i int64, err error) {
-	return strconv.ParseInt(s, base, bitSize)
-}
 
-func (api *RestAPI) unmarshalUrlValues(values url.Values, result interface{}) error {
+
+func (api *{{.Name}}RestAPI) unmarshalUrlValues(values url.Values, result interface{}) error {
 	reflectValue := reflect.ValueOf(result)
 	
 	if reflectValue.Kind() != reflect.Ptr || reflectValue.IsNil() {
@@ -266,7 +240,7 @@ func (api *RestAPI) unmarshalUrlValues(values url.Values, result interface{}) er
 	return nil
 }
 
-func (api *RestAPI) customHandler(f func(r *http.Request, object *{{.Name}}) (interface{}, error)) func(w http.ResponseWriter, r *http.Request) {
+func (api *{{.Name}}RestAPI) customHandler(f func(r *http.Request, object *{{.Name}}) (interface{}, error)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		var object {{.Name}}
@@ -298,11 +272,11 @@ func (api *RestAPI) customHandler(f func(r *http.Request, object *{{.Name}}) (in
 	}
 }
 
-func (api *RestAPI) HandleFunc(path string, f func(r *http.Request, object *{{.Name}}) (interface{}, error)) {
+func (api *{{.Name}}RestAPI) HandleFunc(path string, f func(r *http.Request, object *{{.Name}}) (interface{}, error)) {
 	api.router.HandleFunc(path, api.customHandler(f))
 }
 
-func (api *RestAPI) GetCustomFields(r *http.Request, object interface{}) error {
+func (api *{{.Name}}RestAPI) GetCustomFields(r *http.Request, object interface{}) error {
 	var err error
 	switch strings.ToLower(r.Method) {
 	case "post":

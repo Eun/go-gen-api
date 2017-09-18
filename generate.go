@@ -14,9 +14,10 @@ import (
 )
 
 type generator struct {
-	Config        *Config
-	apiTemplates  *template.Template
-	restTemplates *template.Template
+	Config          *Config
+	globalTemplates *template.Template
+	apiTemplates    *template.Template
+	restTemplates   *template.Template
 }
 
 func Generate(config *Config) error {
@@ -56,6 +57,11 @@ func Generate(config *Config) error {
 		return fmt.Errorf("Unable to prepare output directory '%s': %v", config.OutputPath, err)
 	}
 
+	generator.globalTemplates, err = generator.ParseTemplates(generator.Config.TemplatePath)
+	if err != nil {
+		return err
+	}
+
 	generator.apiTemplates, err = generator.ParseTemplates(filepath.Join(generator.Config.TemplatePath, "api"))
 	if err != nil {
 		return err
@@ -68,6 +74,8 @@ func Generate(config *Config) error {
 		}
 	}
 
+	packageName := strings.ToLower(filepath.Base(generator.Config.OutputPath))
+
 	var structContainers []*structContainer
 
 	for _, strct := range config.Structs {
@@ -76,7 +84,14 @@ func Generate(config *Config) error {
 			return err
 		}
 		if c != nil {
+			c.PackageName = packageName
 			structContainers = append(structContainers, c)
+		}
+	}
+
+	if generator.globalTemplates != nil {
+		for _, t := range generator.globalTemplates.Templates() {
+			generator.GenerateFile(&structContainer{PackageName: packageName}, filepath.Join(generator.Config.OutputPath, t.Name()), t, t.Name())
 		}
 	}
 
@@ -84,13 +99,13 @@ func Generate(config *Config) error {
 
 		if generator.apiTemplates != nil {
 			for _, t := range generator.apiTemplates.Templates() {
-				generator.GenerateFile(stct, filepath.Join(generator.Config.OutputPath, strings.ToLower(stct.Name), t.Name()), t, t.Name())
+				generator.GenerateFile(stct, filepath.Join(generator.Config.OutputPath, strings.ToLower(stct.Name)+"_"+t.Name()), t, t.Name())
 			}
 		}
 
 		if generator.restTemplates != nil {
 			for _, t := range generator.restTemplates.Templates() {
-				generator.GenerateFile(stct, filepath.Join(generator.Config.OutputPath, strings.ToLower(stct.Name), "rest_"+t.Name()), t, t.Name())
+				generator.GenerateFile(stct, filepath.Join(generator.Config.OutputPath, strings.ToLower(stct.Name)+"_rest_"+t.Name()), t, t.Name())
 			}
 		}
 	}

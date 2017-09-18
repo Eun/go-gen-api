@@ -1,4 +1,4 @@
-package {{.Name | ToLower}}
+package {{.PackageName}}
 
 import (
 	"strings"

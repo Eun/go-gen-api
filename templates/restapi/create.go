@@ -1,4 +1,4 @@
-package {{.Name | ToLower}}
+package {{.PackageName}}
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (api *RestAPI) Create(w http.ResponseWriter, r *http.Request) {
+func (api *{{.Name}}RestAPI) Create(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var object {{.Name}}
 

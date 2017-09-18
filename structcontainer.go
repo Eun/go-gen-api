@@ -6,6 +6,7 @@ type structField struct {
 }
 
 type structContainer struct {
-	Name   string
-	Fields []structField
+	PackageName string
+	Name        string
+	Fields      []structField
 }

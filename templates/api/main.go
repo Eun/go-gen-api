@@ -1,7 +1,6 @@
-package {{.Name | ToLower}}
+package {{.PackageName}}
 
 import (
-	"errors"
 	"database/sql"
 )
 
@@ -13,12 +12,11 @@ type {{.Name}} struct {
 
 type {{.Name}}API struct {
 	DB      *sql.DB
-	Hooks   *Hooks
+	Hooks   *{{.Name}}Hooks
 }
 
-var StopOperation = errors.New("StopOperation")
 
-type Hooks struct {
+type {{.Name}}Hooks struct {
 	PreCreate  func(object *{{.Name}}) error
 	PreUpdate  func(objects []{{.Name}}) error
 	PreDelete  func(objects []{{.Name}}) error
@@ -27,10 +25,10 @@ type Hooks struct {
 	PostDelete func(objects []{{.Name}})
 }
 
-func New(db *sql.DB) *{{.Name}}API {
+func New{{.Name}}API(db *sql.DB) *{{.Name}}API {
 	return &{{.Name}}API {
 		DB: db,
-		Hooks: new(Hooks),
+		Hooks: new({{.Name}}Hooks),
 	}
 }
 
